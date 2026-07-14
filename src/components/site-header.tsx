@@ -15,12 +15,14 @@ export function SiteHeader() {
           </Link>
           <Link
             to="/search"
+            search={(prev) => ({ modelId: prev.modelId })}
             className="text-muted-foreground hover:text-foreground [&.active]:text-foreground"
           >
             Search
           </Link>
           <Link
             to="/battle"
+            search={(prev) => ({ modelId: prev.modelId })}
             className="text-muted-foreground hover:text-foreground [&.active]:text-foreground"
           >
             Battle
