@@ -135,3 +135,17 @@ pnpm test             # vitest run
 - Replace the `listPokemon` server function with a real data source when ready.
 - Choose and configure a deployment target (load the deployment skill first).
 - Add tests for the demo route (Vitest + Testing Library are already installed).
+
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs live as local markdown files under `.scratch/<feature>/` (no git remote). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Uses the five canonical triage roles as-is (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
