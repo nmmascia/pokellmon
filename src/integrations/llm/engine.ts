@@ -1,4 +1,8 @@
-import { WebWorkerMLCEngine, type MLCEngineConfig } from "@mlc-ai/web-llm"
+import {
+  WebWorkerMLCEngine,
+  deleteModelAllInfoInCache,
+  type MLCEngineConfig,
+} from "@mlc-ai/web-llm"
 import { useSyncExternalStore } from "react"
 import {
   type EngineState,
@@ -36,10 +40,30 @@ function getEngine(): WebWorkerMLCEngine {
   return engine
 }
 
+function toLoadError(err: unknown): Error {
+  if (err instanceof Error) {
+    if (err.name === "QuotaExceededError") {
+      return new Error(
+        "Not enough browser storage to cache this model. Free up space or choose a smaller model."
+      )
+    }
+    return err
+  }
+  return new Error(String(err) || "Unknown error loading model")
+}
+
 async function initLLMWebWorker(modelId: string) {
-  if (isEngineStateLoading(engineState) || isEngineReady(engineState)) {
+  if (
+    (isEngineStateLoading(engineState) || isEngineReady(engineState)) &&
+    engineState.modelId === modelId
+  ) {
     return
   }
+
+  const previousModelId =
+    isEngineStateLoading(engineState) || isEngineReady(engineState)
+      ? engineState.modelId
+      : null
 
   try {
     if (typeof navigator === "undefined" || !navigator.gpu) {
@@ -50,18 +74,16 @@ async function initLLMWebWorker(modelId: string) {
 
     const active = getEngine()
     emit(createEngineStateLoading(modelId, active))
+
+    if (previousModelId && previousModelId !== modelId) {
+      await deleteModelAllInfoInCache(previousModelId).catch(() => {})
+    }
+
     await active.reload(modelId)
     emit(createEngineStateReady(modelId, active))
   } catch (err) {
     console.error("Model load failed:", err)
-    emit(
-      createEngineStateError(
-        modelId,
-        err instanceof Error
-          ? err
-          : new Error(String(err) || "Unknown error loading model")
-      )
-    )
+    emit(createEngineStateError(modelId, toLoadError(err)))
   }
 }
 
