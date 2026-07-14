@@ -14,10 +14,16 @@ export function SiteHeader() {
             Pokéllmon
           </Link>
           <Link
-            to="/demo"
+            to="/search"
             className="text-muted-foreground hover:text-foreground [&.active]:text-foreground"
           >
-            Demo
+            Search
+          </Link>
+          <Link
+            to="/battle"
+            className="text-muted-foreground hover:text-foreground [&.active]:text-foreground"
+          >
+            Battle
           </Link>
         </nav>
         <ModeToggle />

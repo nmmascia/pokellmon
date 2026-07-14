@@ -1,5 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { buttonVariants } from "@/components/ui/button"
+import { createFileRoute } from "@tanstack/react-router"
 import {
   Card,
   CardContent,
@@ -25,9 +24,6 @@ function App() {
           caches them with TanStack Query, virtualizes the list, and drives
           selection entirely from the keyboard.
         </p>
-        <Link to="/demo" className={buttonVariants()}>
-          Open the virtualized demo →
-        </Link>
       </CardContent>
     </Card>
   )

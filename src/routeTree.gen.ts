@@ -9,12 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as DemoRouteImport } from './routes/demo'
+import { Route as LlmRouteImport } from './routes/_llm'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LlmSearchRouteImport } from './routes/_llm/search'
+import { Route as LlmBattleRouteImport } from './routes/_llm/battle'
+import { Route as LlmChatPokemonIdRouteImport } from './routes/_llm/chat.$pokemonId'
 
-const DemoRoute = DemoRouteImport.update({
-  id: '/demo',
-  path: '/demo',
+const LlmRoute = LlmRouteImport.update({
+  id: '/_llm',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -22,40 +24,68 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LlmSearchRoute = LlmSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => LlmRoute,
+} as any)
+const LlmBattleRoute = LlmBattleRouteImport.update({
+  id: '/battle',
+  path: '/battle',
+  getParentRoute: () => LlmRoute,
+} as any)
+const LlmChatPokemonIdRoute = LlmChatPokemonIdRouteImport.update({
+  id: '/chat/$pokemonId',
+  path: '/chat/$pokemonId',
+  getParentRoute: () => LlmRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/demo': typeof DemoRoute
+  '/battle': typeof LlmBattleRoute
+  '/search': typeof LlmSearchRoute
+  '/chat/$pokemonId': typeof LlmChatPokemonIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/demo': typeof DemoRoute
+  '/battle': typeof LlmBattleRoute
+  '/search': typeof LlmSearchRoute
+  '/chat/$pokemonId': typeof LlmChatPokemonIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/demo': typeof DemoRoute
+  '/_llm': typeof LlmRouteWithChildren
+  '/_llm/battle': typeof LlmBattleRoute
+  '/_llm/search': typeof LlmSearchRoute
+  '/_llm/chat/$pokemonId': typeof LlmChatPokemonIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/demo'
+  fullPaths: '/' | '/battle' | '/search' | '/chat/$pokemonId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/demo'
-  id: '__root__' | '/' | '/demo'
+  to: '/' | '/battle' | '/search' | '/chat/$pokemonId'
+  id:
+    | '__root__'
+    | '/'
+    | '/_llm'
+    | '/_llm/battle'
+    | '/_llm/search'
+    | '/_llm/chat/$pokemonId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DemoRoute: typeof DemoRoute
+  LlmRoute: typeof LlmRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/demo': {
-      id: '/demo'
-      path: '/demo'
-      fullPath: '/demo'
-      preLoaderRoute: typeof DemoRouteImport
+    '/_llm': {
+      id: '/_llm'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof LlmRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -65,12 +95,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_llm/search': {
+      id: '/_llm/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof LlmSearchRouteImport
+      parentRoute: typeof LlmRoute
+    }
+    '/_llm/battle': {
+      id: '/_llm/battle'
+      path: '/battle'
+      fullPath: '/battle'
+      preLoaderRoute: typeof LlmBattleRouteImport
+      parentRoute: typeof LlmRoute
+    }
+    '/_llm/chat/$pokemonId': {
+      id: '/_llm/chat/$pokemonId'
+      path: '/chat/$pokemonId'
+      fullPath: '/chat/$pokemonId'
+      preLoaderRoute: typeof LlmChatPokemonIdRouteImport
+      parentRoute: typeof LlmRoute
+    }
   }
 }
 
+interface LlmRouteChildren {
+  LlmBattleRoute: typeof LlmBattleRoute
+  LlmSearchRoute: typeof LlmSearchRoute
+  LlmChatPokemonIdRoute: typeof LlmChatPokemonIdRoute
+}
+
+const LlmRouteChildren: LlmRouteChildren = {
+  LlmBattleRoute: LlmBattleRoute,
+  LlmSearchRoute: LlmSearchRoute,
+  LlmChatPokemonIdRoute: LlmChatPokemonIdRoute,
+}
+
+const LlmRouteWithChildren = LlmRoute._addFileChildren(LlmRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DemoRoute: DemoRoute,
+  LlmRoute: LlmRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
