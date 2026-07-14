@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { Button } from "@/components/ui/button"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { buttonVariants } from "@/components/ui/button"
 
 export const Route = createFileRoute("/")({ component: App })
 
@@ -9,9 +9,17 @@ function App() {
       <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
         <div>
           <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
+          <p>
+            A TanStack Start app wired with Router, Query, Virtual, and Hotkeys.
+          </p>
+          <p>
+            The demo route fetches 1,000 rows through a Start server function,
+            caches them with TanStack Query, virtualizes the list, and drives
+            selection entirely from the keyboard.
+          </p>
+          <Link to="/demo" className={`mt-2 ${buttonVariants()}`}>
+            Open the virtualized demo →
+          </Link>
         </div>
       </div>
     </div>
