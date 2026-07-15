@@ -1,28 +1,34 @@
 import { createFileRoute } from "@tanstack/react-router"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { ButtonGroup } from "@/components/ui/button-group"
+import { Button } from "@/components/ui/button"
 
 // Feature A — natural-language Pokédex search.
 export const Route = createFileRoute("/_llm/search")({ component: SearchRoute })
 
 function SearchRoute() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Search</CardTitle>
-        <CardDescription>Natural-language Pokédex search</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">
-          Placeholder — the local LLM turns a query into a filter that drives
-          the virtualized results list here.
-        </p>
-      </CardContent>
-    </Card>
+    <div className="mx-auto max-w-md">
+      <form action={(formData) => {}}>
+        <Field>
+          <FieldLabel htmlFor="input-button-group">Search</FieldLabel>
+          <FieldDescription>
+            Describe the Pokémon you're looking for in plain language — by type,
+            ability, region, stats, or appearance — and we'll find the matches.
+          </FieldDescription>
+          <ButtonGroup>
+            <Input
+              name="pokemonPrompt"
+              id="input-button-group"
+              placeholder="e.g. fast Electric-type Pokémon from Kanto"
+            />
+            <Button type="submit" variant="outline">
+              Search
+            </Button>
+          </ButtonGroup>
+        </Field>
+      </form>
+    </div>
   )
 }
