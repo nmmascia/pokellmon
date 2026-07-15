@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { RiSearchLine, RiSwordLine, RiChatSmile3Line } from "@remixicon/react"
+import { RiSearchLine, RiChatSmile3Line } from "@remixicon/react"
 import {
   Card,
   CardContent,
@@ -49,23 +49,12 @@ function App() {
               <RiSearchLine className="size-4" />
               Start searching
             </Link>
-            <Link
-              to="/battle"
-              search={(prev) => ({ modelId: prev.modelId })}
-              className={cn(
-                buttonVariants({ size: "lg", variant: "outline" }),
-                "gap-2"
-              )}
-            >
-              <RiSwordLine className="size-4" />
-              Battle mode
-            </Link>
           </div>
         </div>
       </section>
 
-      {/* ---- Feature trio, each keyed to an elemental type color ---- */}
-      <section className="grid gap-4 sm:grid-cols-3">
+      {/* ---- Feature cards, each keyed to an elemental type color ---- */}
+      <section className="grid gap-4 sm:grid-cols-2">
         <FeatureCard
           icon={<RiSearchLine className="size-5" />}
           title="Natural-language Pokédex"
@@ -82,14 +71,6 @@ function App() {
           accent="var(--chart-3)"
           fg="#ffffff"
           description="Ask about base stats or learnsets and watch charts appear alongside the conversation."
-        />
-        <FeatureCard
-          icon={<RiSwordLine className="size-5" />}
-          title="Streaming battles"
-          type="Fire"
-          accent="var(--chart-1)"
-          fg="#ffffff"
-          description="Pit two Pokémon against each other and let the model narrate the play-by-play."
         />
       </section>
     </div>
