@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LlmRouteImport } from './routes/_llm'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LlmSearchRouteImport } from './routes/_llm/search'
+import { Route as LlmLogsRouteImport } from './routes/_llm/logs'
 import { Route as LlmEvalRouteImport } from './routes/_llm/eval'
 import { Route as LlmChatPokemonIdRouteImport } from './routes/_llm/chat.$pokemonId'
 
@@ -29,6 +30,11 @@ const LlmSearchRoute = LlmSearchRouteImport.update({
   path: '/search',
   getParentRoute: () => LlmRoute,
 } as any)
+const LlmLogsRoute = LlmLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => LlmRoute,
+} as any)
 const LlmEvalRoute = LlmEvalRouteImport.update({
   id: '/eval',
   path: '/eval',
@@ -43,12 +49,14 @@ const LlmChatPokemonIdRoute = LlmChatPokemonIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/eval': typeof LlmEvalRoute
+  '/logs': typeof LlmLogsRoute
   '/search': typeof LlmSearchRoute
   '/chat/$pokemonId': typeof LlmChatPokemonIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/eval': typeof LlmEvalRoute
+  '/logs': typeof LlmLogsRoute
   '/search': typeof LlmSearchRoute
   '/chat/$pokemonId': typeof LlmChatPokemonIdRoute
 }
@@ -57,19 +65,21 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_llm': typeof LlmRouteWithChildren
   '/_llm/eval': typeof LlmEvalRoute
+  '/_llm/logs': typeof LlmLogsRoute
   '/_llm/search': typeof LlmSearchRoute
   '/_llm/chat/$pokemonId': typeof LlmChatPokemonIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/eval' | '/search' | '/chat/$pokemonId'
+  fullPaths: '/' | '/eval' | '/logs' | '/search' | '/chat/$pokemonId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/eval' | '/search' | '/chat/$pokemonId'
+  to: '/' | '/eval' | '/logs' | '/search' | '/chat/$pokemonId'
   id:
     | '__root__'
     | '/'
     | '/_llm'
     | '/_llm/eval'
+    | '/_llm/logs'
     | '/_llm/search'
     | '/_llm/chat/$pokemonId'
   fileRoutesById: FileRoutesById
@@ -102,6 +112,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LlmSearchRouteImport
       parentRoute: typeof LlmRoute
     }
+    '/_llm/logs': {
+      id: '/_llm/logs'
+      path: '/logs'
+      fullPath: '/logs'
+      preLoaderRoute: typeof LlmLogsRouteImport
+      parentRoute: typeof LlmRoute
+    }
     '/_llm/eval': {
       id: '/_llm/eval'
       path: '/eval'
@@ -121,12 +138,14 @@ declare module '@tanstack/react-router' {
 
 interface LlmRouteChildren {
   LlmEvalRoute: typeof LlmEvalRoute
+  LlmLogsRoute: typeof LlmLogsRoute
   LlmSearchRoute: typeof LlmSearchRoute
   LlmChatPokemonIdRoute: typeof LlmChatPokemonIdRoute
 }
 
 const LlmRouteChildren: LlmRouteChildren = {
   LlmEvalRoute: LlmEvalRoute,
+  LlmLogsRoute: LlmLogsRoute,
   LlmSearchRoute: LlmSearchRoute,
   LlmChatPokemonIdRoute: LlmChatPokemonIdRoute,
 }

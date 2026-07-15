@@ -3,6 +3,10 @@ import type {
   WebWorkerMLCEngine,
 } from "@mlc-ai/web-llm"
 import { toSlug } from "@/integrations/pokemon/api"
+import { recordLLMCall, toLogMessages } from "@/integrations/llm/logStore"
+
+// Callers pass this so the chat turn is recorded to the /logs screen.
+export type ChatLogMeta = { modelId: string }
 
 // What the LLM produces for one turn of the conversational Pokédex. As with
 // search, this is *intent*, never facts and never raw GraphQL.
@@ -156,48 +160,84 @@ export async function generateChatIntent(
     types: Array<string>
     stats: Record<string, number>
   },
-  message: string
+  message: string,
+  meta?: ChatLogMeta
 ): Promise<ChatIntent> {
-  const res = await engine.chat.completions.create({
-    stream: false,
-    // Generous ceiling so a chatty reply doesn't truncate the JSON mid-string
-    // (a truncated object can't be JSON.parsed — see parseIntent's salvage path).
-    max_tokens: 700,
-    // Deterministic decoding: reliable panel classification matters more than
-    // varied prose (the search feature likewise runs at temperature 0).
-    temperature: 0,
-    // At temperature 0 a small model can get stuck in a greedy repetition loop
-    // ("...goofball. ...goofball.") that runs to max_tokens and truncates the
-    // JSON. A frequency penalty breaks such loops without affecting the
-    // (short, structured) entity fields.
-    frequency_penalty: 0.6,
-    messages: [
-      { role: "system", content: buildChatSystemPrompt(context) },
-      ...buildFewShot(context.name.replace(/-/g, " ")),
-      { role: "user", content: message },
-    ],
-    response_format: {
-      type: "json_object",
-      schema: chatIntentSchemaString,
-    },
-  })
-  const content = res.choices[0]?.message.content ?? "{}"
-  const parsed = parseIntent(content)
+  const messages: Array<ChatCompletionMessageParam> = [
+    { role: "system", content: buildChatSystemPrompt(context) },
+    ...buildFewShot(context.name.replace(/-/g, " ")),
+    { role: "user", content: message },
+  ]
+  const startedAt = performance.now()
+  try {
+    const res = await engine.chat.completions.create({
+      stream: false,
+      // Generous ceiling so a chatty reply doesn't truncate the JSON mid-string
+      // (a truncated object can't be JSON.parsed — see parseIntent's salvage path).
+      max_tokens: 700,
+      // Deterministic decoding: reliable panel classification matters more than
+      // varied prose (the search feature likewise runs at temperature 0).
+      temperature: 0,
+      // At temperature 0 a small model can get stuck in a greedy repetition loop
+      // ("...goofball. ...goofball.") that runs to max_tokens and truncates the
+      // JSON. A frequency penalty breaks such loops without affecting the
+      // (short, structured) entity fields.
+      frequency_penalty: 0.6,
+      messages,
+      response_format: {
+        type: "json_object",
+        schema: chatIntentSchemaString,
+      },
+    })
+    const content = res.choices[0]?.message.content ?? "{}"
+    const parsed = parseIntent(content)
 
-  // Normalize extracted entities to PokeAPI slugs (the model emits an empty
-  // string / empty array when the user named nothing).
-  const compare = parsed.comparePokemon
-    ? toSlug(parsed.comparePokemon)
-    : undefined
-  const moves = parsed.moves?.map(toSlug).filter(Boolean) ?? []
-  const routed = routeIntent(message, compare, moves)
+    // Normalize extracted entities to PokeAPI slugs (the model emits an empty
+    // string / empty array when the user named nothing).
+    const compare = parsed.comparePokemon
+      ? toSlug(parsed.comparePokemon)
+      : undefined
+    const moves = parsed.moves?.map(toSlug).filter(Boolean) ?? []
+    const routed = routeIntent(message, compare, moves)
 
-  return {
-    comparePokemon: routed.comparePokemon,
-    moves: routed.moves,
-    trainerReply: parsed.trainerReply?.trim() || "Here you go!",
-    pokemonReply: parsed.pokemonReply?.trim() || "",
-    panel: routed.panel,
+    const intent: ChatIntent = {
+      comparePokemon: routed.comparePokemon,
+      moves: routed.moves,
+      trainerReply: parsed.trainerReply?.trim() || "Here you go!",
+      pokemonReply: parsed.pokemonReply?.trim() || "",
+      panel: routed.panel,
+    }
+
+    if (meta) {
+      recordLLMCall({
+        source: "chat",
+        modelId: meta.modelId,
+        input: message,
+        contextLabel: context.name.replace(/-/g, " "),
+        messages: toLogMessages(messages),
+        rawContent: content,
+        parsed: intent,
+        durationMs: performance.now() - startedAt,
+        usage: res.usage,
+      })
+    }
+
+    return intent
+  } catch (err) {
+    if (meta) {
+      recordLLMCall({
+        source: "chat",
+        modelId: meta.modelId,
+        input: message,
+        contextLabel: context.name.replace(/-/g, " "),
+        messages: toLogMessages(messages),
+        rawContent: "",
+        parsed: null,
+        durationMs: performance.now() - startedAt,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+    throw err
   }
 }
 

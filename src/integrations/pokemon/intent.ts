@@ -8,6 +8,11 @@ import type {
   PokemonWhere,
 } from "@/integrations/pokemon/api"
 import { statValue } from "@/integrations/pokemon/api"
+import { recordLLMCall, toLogMessages } from "@/integrations/llm/logStore"
+
+// Callers pass this so the call is recorded to the /logs screen. Omitted by the
+// /eval harness, which has its own view and shouldn't pollute the live log.
+export type IntentLogMeta = { modelId: string }
 
 // The 18 Pokémon types and the six base stats, as PokeAPI names them. These are
 // the *only* values the model is allowed to emit — constraining the schema to
@@ -290,28 +295,59 @@ export function buildSearchVariables(intent: SearchIntent): BuiltSearch {
 // guaranteed to be JSON matching `searchIntentJsonSchema`.
 export async function generateSearchIntent(
   engine: WebWorkerMLCEngine,
-  query: string
+  query: string,
+  meta?: IntentLogMeta
 ): Promise<SearchIntent> {
-  const res = await engine.chat.completions.create({
-    stream: false,
-    max_tokens: 256,
-    temperature: 0,
-    messages: [
-      { role: "system", content: SEARCH_SYSTEM_PROMPT },
-      ...FEW_SHOT,
-      { role: "user", content: query },
-    ],
-    response_format: {
-      type: "json_object",
-      schema: searchIntentSchemaString,
-    },
-  })
-  const content = res.choices[0]?.message.content ?? "{}"
-  const parsed = JSON.parse(content) as SearchIntent
-  if (!parsed.summary) {
-    parsed.summary = `Results for “${query}”.`
+  const messages: Array<ChatCompletionMessageParam> = [
+    { role: "system", content: SEARCH_SYSTEM_PROMPT },
+    ...FEW_SHOT,
+    { role: "user", content: query },
+  ]
+  const startedAt = performance.now()
+  try {
+    const res = await engine.chat.completions.create({
+      stream: false,
+      max_tokens: 256,
+      temperature: 0,
+      messages,
+      response_format: {
+        type: "json_object",
+        schema: searchIntentSchemaString,
+      },
+    })
+    const content = res.choices[0]?.message.content ?? "{}"
+    const parsed = JSON.parse(content) as SearchIntent
+    if (!parsed.summary) {
+      parsed.summary = `Results for “${query}”.`
+    }
+    if (meta) {
+      recordLLMCall({
+        source: "search",
+        modelId: meta.modelId,
+        input: query,
+        messages: toLogMessages(messages),
+        rawContent: content,
+        parsed,
+        durationMs: performance.now() - startedAt,
+        usage: res.usage,
+      })
+    }
+    return parsed
+  } catch (err) {
+    if (meta) {
+      recordLLMCall({
+        source: "search",
+        modelId: meta.modelId,
+        input: query,
+        messages: toLogMessages(messages),
+        rawContent: "",
+        parsed: null,
+        durationMs: performance.now() - startedAt,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+    throw err
   }
-  return parsed
 }
 
 // The API returns rows in id order; we sort by the LLM-chosen stat client-side

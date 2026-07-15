@@ -133,7 +133,8 @@ function ChatRoute() {
       const intent = await generateChatIntent(
         engineState.engine,
         { name: context.name, types: context.types, stats: context.stats },
-        message
+        message,
+        { modelId: engineState.modelId }
       )
       // A newer message superseded this one while the model was running; drop
       // this (now stale) result so it can't clobber the latest answer.

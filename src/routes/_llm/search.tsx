@@ -64,7 +64,9 @@ function SearchRoute() {
     setIntent(null)
     setBuilt(null)
     try {
-      const nextIntent = await generateSearchIntent(engineState.engine, trimmed)
+      const nextIntent = await generateSearchIntent(engineState.engine, trimmed, {
+        modelId: engineState.modelId,
+      })
       setSubmittedPrompt(trimmed)
       setIntent(nextIntent)
       setBuilt(buildSearchVariables(nextIntent))
