@@ -29,6 +29,15 @@ import {
   sortRows,
 } from "@/integrations/pokemon/intent"
 import type { BuiltSearch, SearchIntent } from "@/integrations/pokemon/intent"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
 // Feature A — natural-language Pokédex search.
 export const Route = createFileRoute("/_llm/search")({ component: SearchRoute })
@@ -72,8 +81,8 @@ function SearchRoute() {
       : []
 
   return (
-    <div className="mx-auto max-w-md space-y-3">
-      <form action={runSearch}>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <form action={runSearch} className="mx-auto max-w-md">
         <Field>
           <FieldLabel htmlFor="input-button-group">Search</FieldLabel>
           <FieldDescription>
@@ -111,36 +120,37 @@ function SearchRoute() {
       )}
 
       {rows.length > 0 && (
-        <ul className="divide-y rounded-md border">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((row) => (
-            <li key={row.id} className="flex items-center gap-3 px-3 py-2">
+            <Card key={row.id} size="sm">
               <img
                 src={spriteUrl(row) ?? undefined}
-                alt=""
-                width={40}
-                height={40}
-                className="size-10 shrink-0 object-contain"
-                loading="lazy"
+                alt="Event cover"
+                className="relative z-20 aspect-video w-full object-contain"
               />
-              <span className="flex-1 font-medium capitalize">
-                {row.name.replace(/-/g, " ")}
-              </span>
-              <span className="text-xs text-muted-foreground tabular-nums">
-                #{row.id}
-              </span>
-              {built?.sort && (
-                <span className="text-sm tabular-nums">
-                  <span className="text-muted-foreground capitalize">
-                    {built.sort.stat.replace(/-/g, " ")}{" "}
+              <CardHeader>
+                <CardTitle className="capitalize">
+                  {row.name.replace(/-/g, " ")}
+                </CardTitle>
+                <CardAction>
+                  <Badge>#{row.id}</Badge>
+                </CardAction>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center gap-2 text-center">
+                {built?.sort && (
+                  <span className="text-sm tabular-nums">
+                    <span className="text-muted-foreground capitalize">
+                      {built.sort.stat.replace(/-/g, " ")}{" "}
+                    </span>
+                    <span className="font-semibold">
+                      {statValue(row, built.sort.stat)}
+                    </span>
                   </span>
-                  <span className="font-semibold">
-                    {statValue(row, built.sort.stat)}
-                  </span>
-                </span>
-              )}
-            </li>
+                )}
+              </CardContent>
+            </Card>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   )
