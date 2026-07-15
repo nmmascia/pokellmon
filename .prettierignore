@@ -1,3 +1,7 @@
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
+
+# gql.tada generated artifacts (regenerated from the schema, not hand-edited)
+src/api/schema.graphql
+src/api/graphql-env.d.ts

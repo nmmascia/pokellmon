@@ -12,6 +12,13 @@
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],
+    "plugins": [
+      {
+        "name": "@0no-co/graphqlsp",
+        "schema": "./src/api/schema.graphql",
+        "tadaOutputLocation": "./src/api/graphql-env.d.ts"
+      }
+    ],
     "paths": {
       "@/*": ["./src/*"]
     },
