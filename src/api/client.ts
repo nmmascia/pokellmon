@@ -1,9 +1,12 @@
 import { print } from "graphql"
 import type { TadaDocumentNode } from "gql.tada"
 
-// PokéAPI GraphQL endpoint (v1beta2). Read-only, no auth; rate-limited to
-// ~100 requests/hour per IP, so lean on TanStack Query's cache (see ./pokemon.ts).
-export const POKEAPI_GRAPHQL_ENDPOINT = "https://graphql.pokeapi.co/v1beta2"
+// PokéAPI GraphQL endpoint (v1beta). Read-only, no auth; rate-limited, so lean
+// on TanStack Query's cache (see ./pokemon.ts). We use `beta.pokeapi.co/.../v1beta`
+// rather than the newer `graphql.pokeapi.co/v1beta2`: v1beta2 currently returns
+// empty `pokemontype` / `pokemonstat` join tables, so it can't answer the
+// type/stat queries the search feature relies on.
+export const POKEAPI_GRAPHQL_ENDPOINT = "https://beta.pokeapi.co/graphql/v1beta"
 
 interface GraphQLResponse<TData> {
   data?: TData

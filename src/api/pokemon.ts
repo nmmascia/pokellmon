@@ -7,7 +7,7 @@ import type { ResultOf, VariablesOf } from "./graphql"
 // `$offset` variables are all validated against the schema by gql.tada.
 export const PokemonListQuery = graphql(`
   query PokemonList($limit: Int!, $offset: Int!) {
-    pokemon(limit: $limit, offset: $offset, order_by: { id: asc }) {
+    pokemon_v2_pokemon(limit: $limit, offset: $offset, order_by: { id: asc }) {
       id
       name
       height
@@ -19,7 +19,7 @@ export const PokemonListQuery = graphql(`
 
 export const PokemonByIdQuery = graphql(`
   query PokemonById($id: Int!) {
-    pokemon(where: { id: { _eq: $id } }, limit: 1) {
+    pokemon_v2_pokemon(where: { id: { _eq: $id } }, limit: 1) {
       id
       name
       height
@@ -31,7 +31,7 @@ export const PokemonByIdQuery = graphql(`
 
 // Convenience result types derived from the documents above — components can
 // consume these without re-declaring the response shape.
-export type PokemonList = ResultOf<typeof PokemonListQuery>["pokemon"]
+export type PokemonList = ResultOf<typeof PokemonListQuery>["pokemon_v2_pokemon"]
 export type Pokemon = PokemonList[number]
 
 // Namespaced query keys keep cache invalidation predictable.
