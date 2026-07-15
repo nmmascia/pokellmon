@@ -52,7 +52,10 @@ export type SearchIntent = {
   basicOnly?: boolean
   generation?: number
   sortStat?: PokemonStat
-  sortDirection?: "asc" | "desc"
+  // Natural-language tokens, not DB jargon: small models reliably map
+  // 'fast'/'strong' -> 'highest' but not -> 'desc'. Converted to asc/desc in
+  // buildSearchVariables.
+  sortOrder?: "highest" | "lowest"
   minStat?: number
   limit?: number
   summary: string
@@ -66,7 +69,8 @@ export const searchIntentJsonSchema = {
     types: {
       type: "array",
       items: { type: "string", enum: [...POKEMON_TYPES] },
-      description: "Elemental types the Pokémon must have.",
+      description:
+        "Elemental types the user explicitly named. Omit entirely if no type is named — never guess.",
     },
     basicOnly: {
       type: "boolean",
@@ -84,12 +88,13 @@ export const searchIntentJsonSchema = {
       enum: [...POKEMON_STATS],
       description: "The stat to rank by, e.g. speed for 'fast' Pokémon.",
     },
-    sortDirection: {
+    sortOrder: {
       type: "string",
-      // `desc` first on purpose: greedy constrained decoding is biased toward the
-      // first enum token, and 'high/best/fast' (desc) is the common case.
-      enum: ["desc", "asc"],
-      description: "desc for 'high/best/most/fast', asc for 'low/worst/slow'.",
+      // `highest` first on purpose: greedy constrained decoding is biased toward
+      // the first enum token, and 'high/best/fast' (highest) is the common case.
+      enum: ["highest", "lowest"],
+      description:
+        "highest for 'high/best/most/fast/strong/tanky', lowest for 'low/worst/slow/weak'.",
     },
     minStat: {
       type: "integer",
@@ -115,19 +120,21 @@ export const SEARCH_SYSTEM_PROMPT = [
   "You convert a user's natural-language Pokémon request into a JSON search filter.",
   "Only output JSON matching the schema. Never write GraphQL, never invent stats or facts.",
   "Fill in EVERY field the request implies — do not stop after `types`. A request usually implies several fields at once.",
-  "sortStat: 'fast' -> speed; 'strong/hard-hitting' -> attack; 'tanky/bulky' -> defense; 'tough' -> hp.",
-  "sortDirection is about the adjective, NOT the stat: 'high/fast/great/best/most' -> 'desc'; only 'low/slow/worst/least' -> 'asc'. So 'high speed' and 'fast' are BOTH 'desc'.",
+  "sortStat picks WHICH stat to rank by: 'fast' AND 'slow' -> speed; 'strong/hard-hitting/powerful/weak/weakest' -> attack; 'tanky/bulky' -> defense; 'tough' -> hp. The adjective's speed/weak/etc. sets the stat; whether it's high or low goes in sortOrder, not here.",
+  "sortOrder: pick 'highest' for high, fast, strong, great, best, most, top, tanky, bulky, hard-hitting; pick 'lowest' ONLY for low, slow, weak, worst, least. Superlatives like 'strongest', 'fastest', 'tankiest' are ALWAYS 'highest'.",
   "minStat: use ~80 for 'high/fast', ~100 for 'very high/really fast'. Omit it otherwise.",
   "basicOnly true for 'basic', 'unevolved', or 'starter-stage'.",
+  "types: include ONLY the elemental types the user literally names (e.g. 'fire', 'water'). If the request names no type, leave `types` out completely — never guess or list many types.",
   "Set `generation` ONLY when the user explicitly names a generation or region — never guess it.",
   "Always write a short, friendly `summary` of what you searched for.",
 ].join(" ")
 
 // Worked examples. Small models under grammar constraints tend to emit only the
 // required field unless shown that requests map to *many* fields, and they get
-// sort direction backwards without an explicit high->desc example. These cover
-// high->desc, basic->basicOnly, low->asc, and generation-only-when-stated,
-// without reusing the app's own example queries.
+// sort order backwards without explicit examples. These deliberately cover the
+// cases a 1B model gets wrong: superlatives/adjectives -> 'highest', a bare
+// superlative with no type (must NOT invent types), 'weak' -> attack + 'lowest',
+// unevolved -> basicOnly, and generation-only-when-stated.
 const FEW_SHOT: Array<ChatCompletionMessageParam> = [
   {
     role: "user",
@@ -139,22 +146,75 @@ const FEW_SHOT: Array<ChatCompletionMessageParam> = [
       types: ["bug"],
       basicOnly: true,
       sortStat: "speed",
-      sortDirection: "desc",
+      sortOrder: "highest",
       minStat: 80,
       summary: "Unevolved Bug-type Pokémon with high Speed.",
     }),
   },
   {
     role: "user",
-    content: "grass pokemon with the lowest attack",
+    content: "strongest dragon pokemon",
+  },
+  {
+    role: "assistant",
+    content: JSON.stringify({
+      types: ["dragon"],
+      sortStat: "attack",
+      sortOrder: "highest",
+      summary: "Dragon-type Pokémon with the highest Attack.",
+    }),
+  },
+  {
+    role: "user",
+    content: "tanky steel types",
+  },
+  {
+    role: "assistant",
+    content: JSON.stringify({
+      types: ["steel"],
+      sortStat: "defense",
+      sortOrder: "highest",
+      summary: "Steel-type Pokémon with the highest Defense.",
+    }),
+  },
+  {
+    role: "user",
+    content: "fastest pokemon",
+  },
+  {
+    role: "assistant",
+    content: JSON.stringify({
+      sortStat: "speed",
+      sortOrder: "highest",
+      summary: "Pokémon with the highest Speed.",
+    }),
+  },
+  {
+    role: "user",
+    content: "weakest grass pokemon",
   },
   {
     role: "assistant",
     content: JSON.stringify({
       types: ["grass"],
       sortStat: "attack",
-      sortDirection: "asc",
+      sortOrder: "lowest",
       summary: "Grass-type Pokémon with the lowest Attack.",
+    }),
+  },
+  {
+    // 'slow' is about Speed, not Defense — a mapping the 1B model gets wrong from
+    // instructions alone, so pin it with an example.
+    role: "user",
+    content: "slow water pokemon",
+  },
+  {
+    role: "assistant",
+    content: JSON.stringify({
+      types: ["water"],
+      sortStat: "speed",
+      sortOrder: "lowest",
+      summary: "Water-type Pokémon with the lowest Speed.",
     }),
   },
   {
@@ -167,7 +227,7 @@ const FEW_SHOT: Array<ChatCompletionMessageParam> = [
       types: ["psychic"],
       generation: 1,
       sortStat: "special-attack",
-      sortDirection: "desc",
+      sortOrder: "highest",
       minStat: 100,
       summary:
         "Generation 1 Psychic-type Pokémon with very high Special Attack.",
@@ -188,9 +248,11 @@ export type BuiltSearch = {
 export function buildSearchVariables(intent: SearchIntent): BuiltSearch {
   const where: PokemonWhere = { is_default: { _eq: true } }
 
-  if (intent.types?.length) {
+  // Dedup: small models sometimes repeat a type (e.g. ["rock","rock"]).
+  const types = intent.types?.length ? [...new Set(intent.types)] : []
+  if (types.length) {
     where.pokemon_v2_pokemontypes = {
-      pokemon_v2_type: { name: { _in: intent.types } },
+      pokemon_v2_type: { name: { _in: types } },
     }
   }
 
@@ -216,7 +278,10 @@ export function buildSearchVariables(intent: SearchIntent): BuiltSearch {
   return {
     variables: { where, limit: intent.limit ?? DEFAULT_LIMIT },
     sort: intent.sortStat
-      ? { stat: intent.sortStat, direction: intent.sortDirection ?? "desc" }
+      ? {
+          stat: intent.sortStat,
+          direction: intent.sortOrder === "lowest" ? "asc" : "desc",
+        }
       : null,
   }
 }

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LlmRouteImport } from './routes/_llm'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LlmSearchRouteImport } from './routes/_llm/search'
+import { Route as LlmEvalRouteImport } from './routes/_llm/eval'
 import { Route as LlmBattleRouteImport } from './routes/_llm/battle'
 import { Route as LlmChatPokemonIdRouteImport } from './routes/_llm/chat.$pokemonId'
 
@@ -29,6 +30,11 @@ const LlmSearchRoute = LlmSearchRouteImport.update({
   path: '/search',
   getParentRoute: () => LlmRoute,
 } as any)
+const LlmEvalRoute = LlmEvalRouteImport.update({
+  id: '/eval',
+  path: '/eval',
+  getParentRoute: () => LlmRoute,
+} as any)
 const LlmBattleRoute = LlmBattleRouteImport.update({
   id: '/battle',
   path: '/battle',
@@ -43,12 +49,14 @@ const LlmChatPokemonIdRoute = LlmChatPokemonIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/battle': typeof LlmBattleRoute
+  '/eval': typeof LlmEvalRoute
   '/search': typeof LlmSearchRoute
   '/chat/$pokemonId': typeof LlmChatPokemonIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/battle': typeof LlmBattleRoute
+  '/eval': typeof LlmEvalRoute
   '/search': typeof LlmSearchRoute
   '/chat/$pokemonId': typeof LlmChatPokemonIdRoute
 }
@@ -57,19 +65,21 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_llm': typeof LlmRouteWithChildren
   '/_llm/battle': typeof LlmBattleRoute
+  '/_llm/eval': typeof LlmEvalRoute
   '/_llm/search': typeof LlmSearchRoute
   '/_llm/chat/$pokemonId': typeof LlmChatPokemonIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/battle' | '/search' | '/chat/$pokemonId'
+  fullPaths: '/' | '/battle' | '/eval' | '/search' | '/chat/$pokemonId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/battle' | '/search' | '/chat/$pokemonId'
+  to: '/' | '/battle' | '/eval' | '/search' | '/chat/$pokemonId'
   id:
     | '__root__'
     | '/'
     | '/_llm'
     | '/_llm/battle'
+    | '/_llm/eval'
     | '/_llm/search'
     | '/_llm/chat/$pokemonId'
   fileRoutesById: FileRoutesById
@@ -102,6 +112,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LlmSearchRouteImport
       parentRoute: typeof LlmRoute
     }
+    '/_llm/eval': {
+      id: '/_llm/eval'
+      path: '/eval'
+      fullPath: '/eval'
+      preLoaderRoute: typeof LlmEvalRouteImport
+      parentRoute: typeof LlmRoute
+    }
     '/_llm/battle': {
       id: '/_llm/battle'
       path: '/battle'
@@ -121,12 +138,14 @@ declare module '@tanstack/react-router' {
 
 interface LlmRouteChildren {
   LlmBattleRoute: typeof LlmBattleRoute
+  LlmEvalRoute: typeof LlmEvalRoute
   LlmSearchRoute: typeof LlmSearchRoute
   LlmChatPokemonIdRoute: typeof LlmChatPokemonIdRoute
 }
 
 const LlmRouteChildren: LlmRouteChildren = {
   LlmBattleRoute: LlmBattleRoute,
+  LlmEvalRoute: LlmEvalRoute,
   LlmSearchRoute: LlmSearchRoute,
   LlmChatPokemonIdRoute: LlmChatPokemonIdRoute,
 }
