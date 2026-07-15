@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { RiInformationLine } from "@remixicon/react"
@@ -33,11 +33,11 @@ import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { PokeballIcon } from "@/components/pokemon/pokeball"
 
 // Feature A — natural-language Pokédex search.
 export const Route = createFileRoute("/_llm/search")({ component: SearchRoute })
@@ -122,33 +122,53 @@ function SearchRoute() {
       {rows.length > 0 && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((row) => (
-            <Card key={row.id} size="sm">
-              <img
-                src={spriteUrl(row) ?? undefined}
-                alt="Event cover"
-                className="relative z-20 aspect-video w-full object-contain"
-              />
-              <CardHeader>
-                <CardTitle className="capitalize">
-                  {row.name.replace(/-/g, " ")}
-                </CardTitle>
-                <CardAction>
-                  <Badge>#{row.id}</Badge>
-                </CardAction>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center gap-2 text-center">
-                {built?.sort && (
-                  <span className="text-sm tabular-nums">
-                    <span className="text-muted-foreground capitalize">
-                      {built.sort.stat.replace(/-/g, " ")}{" "}
+            <Link
+              key={row.id}
+              to="/chat/$pokemonId"
+              params={{ pokemonId: String(row.id) }}
+              search={(prev) => ({ modelId: prev.modelId })}
+              className="rounded-none outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <Card
+                size="sm"
+                className="group h-full transition-colors hover:border-ring"
+              >
+                <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden">
+                  <PokeballIcon
+                    aria-hidden
+                    className="absolute size-28 opacity-[0.18] transition-all duration-500 group-hover:rotate-[360deg] group-hover:opacity-30"
+                  />
+                  <img
+                    src={spriteUrl(row) ?? undefined}
+                    alt={row.name}
+                    className="relative z-20 h-full w-full object-contain transition-transform group-hover:scale-110"
+                  />
+                </div>
+                <CardHeader>
+                  <CardTitle className="capitalize">
+                    {row.name.replace(/-/g, " ")}
+                  </CardTitle>
+                  <CardAction>
+                    <Badge>#{row.id}</Badge>
+                  </CardAction>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center gap-2 text-center">
+                  {built?.sort && (
+                    <span className="text-sm tabular-nums">
+                      <span className="text-muted-foreground capitalize">
+                        {built.sort.stat.replace(/-/g, " ")}{" "}
+                      </span>
+                      <span className="font-semibold">
+                        {statValue(row, built.sort.stat)}
+                      </span>
                     </span>
-                    <span className="font-semibold">
-                      {statValue(row, built.sort.stat)}
-                    </span>
+                  )}
+                  <span className="text-xs text-muted-foreground">
+                    Chat with {row.name.replace(/-/g, " ")} →
                   </span>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

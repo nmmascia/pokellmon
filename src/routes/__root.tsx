@@ -9,6 +9,8 @@ import type { QueryClient } from "@tanstack/react-query"
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools"
 import { ThemeProvider } from "../components/theme-provider"
 import { SiteHeader } from "../components/site-header"
+import { PokeballIcon } from "../components/pokemon/pokeball"
+import { buttonVariants } from "../components/ui/button"
 
 import appCss from "../styles.css?url"
 
@@ -35,12 +37,24 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         rel: "stylesheet",
         href: appCss,
       },
+      {
+        rel: "icon",
+        type: "image/svg+xml",
+        href: "/pokeball.svg",
+      },
     ],
   }),
   notFoundComponent: () => (
-    <main className="container mx-auto p-4 pt-16">
-      <h1>404</h1>
-      <p>The requested page could not be found.</p>
+    <main className="container mx-auto flex flex-col items-center gap-4 p-4 pt-24 text-center">
+      <PokeballIcon className="size-16 opacity-80" />
+      <h1 className="text-3xl font-bold">404 — This Pokémon fled!</h1>
+      <p className="max-w-md text-muted-foreground">
+        The page you were chasing darted into the tall grass. Let&apos;s head
+        back to the Pokédex.
+      </p>
+      <a href="/" className={buttonVariants({ variant: "default" })}>
+        Return to Pokéllmon
+      </a>
     </main>
   ),
   shellComponent: RootDocument,

@@ -1,8 +1,12 @@
 import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router"
 import { Activity } from "react"
 import { ModelPickerForm } from "@/components/model-picker-form"
+import { PikachuLoader } from "@/components/pokemon/pikachu-loader"
 import useLLMEngine from "@/integrations/llm/engine"
-import { isEngineReady } from "@/integrations/llm/engineState"
+import {
+  isEngineReady,
+  isEngineStateLoading,
+} from "@/integrations/llm/engineState"
 
 export const Route = createFileRoute("/_llm")({
   component: LlmLayout,
@@ -39,6 +43,16 @@ function LlmLayout() {
         engineState={engineState}
         onSubmit={onModelFormSubmit}
       />
+      {isEngineStateLoading(engineState) && (
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <PikachuLoader
+            showLabel
+            label={`${engineState.progress?.text ?? "Waking Pikachu…"} (${Math.round(
+              (engineState.progress?.progress ?? 0) * 100
+            )}%)`}
+          />
+        </div>
+      )}
       <Activity mode={isEngineReady(engineState) ? "visible" : "hidden"}>
         <Outlet />
       </Activity>
