@@ -89,6 +89,12 @@ function ChatRoute() {
   const [error, setError] = useState<string | null>(null)
   const [panel, setPanel] = useState<Panel>(null)
   const nextId = useRef(0)
+  // Monotonic id for the in-flight chat turn. Because runChat is async and a
+  // second message can be sent (via Enter) before the first finishes, we tag
+  // each turn and ignore any response that a newer turn has superseded — so the
+  // panel always reflects the most recent question, not whichever model call
+  // happened to finish last.
+  const runSeq = useRef(0)
 
   // Seed the opening lines once we know who the Pokémon is.
   useEffect(() => {
@@ -115,8 +121,11 @@ function ChatRoute() {
   async function runChat(formData: FormData) {
     const raw = formData.get("message")
     const message = typeof raw === "string" ? raw.trim() : ""
-    if (!message || !context || !isEngineReady(engineState)) return
+    // Ignore empty input, an unready engine, or a re-submit while a turn is
+    // already generating (the send button is disabled, but Enter isn't).
+    if (!message || !context || !isEngineReady(engineState) || thinking) return
 
+    const seq = ++runSeq.current
     setError(null)
     push("user", message)
     setThinking(true)
@@ -126,6 +135,10 @@ function ChatRoute() {
         { name: context.name, types: context.types, stats: context.stats },
         message
       )
+      // A newer message superseded this one while the model was running; drop
+      // this (now stale) result so it can't clobber the latest answer.
+      if (seq !== runSeq.current) return
+
       push("trainer", intent.trainerReply)
       if (intent.pokemonReply) push("pokemon", intent.pokemonReply)
 
@@ -135,9 +148,11 @@ function ChatRoute() {
         setPanel({ kind: "moves", moves: intent.moves })
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      if (seq === runSeq.current) {
+        setError(err instanceof Error ? err.message : String(err))
+      }
     } finally {
-      setThinking(false)
+      if (seq === runSeq.current) setThinking(false)
     }
   }
 
